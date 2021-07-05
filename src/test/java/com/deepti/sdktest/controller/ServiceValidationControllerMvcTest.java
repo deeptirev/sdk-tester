@@ -1,67 +1,234 @@
-//package com.deepti.sdktest.controller;
-//
-//import com.deepti.sdktest.model.DeviceCheckDetailsObject;
-//import com.deepti.sdktest.model.PuppyObject;
-//import com.deepti.sdktest.service.ServiceValidationService;
-//import org.apache.http.conn.ssl.NoopHostnameVerifier;
-//import org.junit.jupiter.api.Test;
-//import org.mockito.InjectMocks;
-//import org.mockito.Mock;
-//import org.springframework.beans.factory.annotation.Autowired;
-//import org.springframework.boot.test.context.SpringBootTest;
-//import org.springframework.boot.test.web.client.TestRestTemplate;
-//import org.springframework.boot.web.server.LocalServerPort;
-//import org.springframework.http.HttpEntity;
-//import org.springframework.http.HttpHeaders;
-//import org.springframework.http.MediaType;
-//import org.springframework.http.ResponseEntity;
-//import org.springframework.http.client.SimpleClientHttpRequestFactory;
-//
-//import javax.net.ssl.HttpsURLConnection;
-//import java.io.IOException;
-//import java.net.HttpURLConnection;
-//import java.net.URL;
-//import java.util.ArrayList;
-//import java.util.Collections;
-//import java.util.List;
-//import java.util.Map;
-//
-//import static org.junit.jupiter.api.Assertions.assertEquals;
-//import static org.mockito.ArgumentMatchers.any;
-//import static org.mockito.Mockito.when;
-//
-//@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-//public class ServiceValidationControllerMvcTest {
-//
-//    @LocalServerPort
-//    private int port;
-//
-////    @Autowired
-////    private TestRestTemplate restTemplate;
-//
-//    @Test
-//    public void testController() throws Exception{
-//
-////        restTemplate.getRestTemplate().setRequestFactory(new SimpleClientHttpRequestFactory() {
-////            @Override
-////            protected void prepareConnection(HttpURLConnection connection, String httpMethod) throws IOException {
-////                if (connection instanceof HttpsURLConnection) {
-////                    ((HttpsURLConnection) connection).setHostnameVerifier(new NoopHostnameVerifier());
-////                }
-////                super.prepareConnection(connection, httpMethod);
-////            }
-////        });
-//        TestRestTemplate testRestTemplate = new TestRestTemplate(TestRestTemplate.HttpClientOption.SSL);
-//
-//        List<DeviceCheckDetailsObject> deviceCheckDetailsObjects = new ArrayList<>();
-//        HttpHeaders headers = new HttpHeaders();
-//        headers.setContentType(MediaType.APPLICATION_JSON);
-//        headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
-//
-//        HttpEntity<List<DeviceCheckDetailsObject>> entity = new HttpEntity<>(deviceCheckDetailsObjects, headers);
-//
-//        ResponseEntity<String> response = testRestTemplate.postForEntity(
-//                new URL("https://localhost:" + port + "/").toString(), entity, String.class);
-//        assertEquals("Hello Controller", response.getBody());
-//    }
-//}
+package com.deepti.sdktest.controller;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+
+@AutoConfigureMockMvc
+@SpringBootTest
+public class ServiceValidationControllerMvcTest {
+
+    @Autowired
+    private MockMvc mvc;
+
+    @Test
+    public void testServiceSuccess() throws Exception {
+        String body = " [ " +
+                "{" +
+                "\"checkType\": \"DEVICE\"," +
+                "\"activityType\": \"SIGNUP\"," +
+                "\"checkSessionKey\": \"abc\"," +
+                "\"activityData\": [" +
+                "{" +
+                "\"kvpKey\": \"some.key\"," +
+                "\"kvpValue\": \"10\"," +
+                "\"kvpType\": \"general.float\"" +
+                "}" +
+                "]" +
+                "}" +
+                "]";
+        MvcResult result = mvc.perform(MockMvcRequestBuilders.post("/isgood")
+                .content(body)
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String resultString = result.getResponse().getContentAsString();
+        assertNotNull(resultString);
+        assertTrue(resultString.contains("puppy"));
+        assertTrue(resultString.contains("true"));
+    }
+
+    @Test
+    public void testServiceBadCheckType() throws Exception {
+        String body = " [ " +
+                "{" +
+                "\"checkType\": \"WRONG_ENUM\"," +
+                "\"activityType\": \"SIGNUP\"," +
+                "\"checkSessionKey\": \"abc\"," +
+                "\"activityData\": [" +
+                "{" +
+                "\"kvpKey\": \"some.key\"," +
+                "\"kvpValue\": \"10\"," +
+                "\"kvpType\": \"general.float\"" +
+                "}" +
+                "]" +
+                "}" +
+                "]";
+        MvcResult result = mvc.perform(MockMvcRequestBuilders.post("/isgood")
+                .content(body)
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isInternalServerError())
+                .andReturn();
+
+        String resultString = result.getResponse().getContentAsString();
+        assertNotNull(resultString);
+        assertTrue(resultString.contains("\"code\":0"));
+        assertTrue(resultString.contains("checkType not one of"));
+    }
+
+    @Test
+    public void testServiceBadActivityType() throws Exception {
+        String body = " [ " +
+                "{" +
+                "\"checkType\": \"DEVICE\"," +
+                "\"activityType\": \"WRONG_ENUM\"," +
+                "\"checkSessionKey\": \"abc\"," +
+                "\"activityData\": [" +
+                "{" +
+                "\"kvpKey\": \"some.key\"," +
+                "\"kvpValue\": \"10\"," +
+                "\"kvpType\": \"general.float\"" +
+                "}" +
+                "]" +
+                "}" +
+                "]";
+        MvcResult result = mvc.perform(MockMvcRequestBuilders.post("/isgood")
+                .content(body)
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isInternalServerError())
+                .andReturn();
+
+        String resultString = result.getResponse().getContentAsString();
+        assertNotNull(resultString);
+        assertTrue(resultString.contains("\"code\":0"));
+        assertTrue(resultString.contains("activityType not one of"));
+    }
+
+    @Test
+    public void testServiceDupeSessionKey() throws Exception {
+        String body = " [ " +
+                "{" +
+                "\"checkType\": \"DEVICE\"," +
+                "\"activityType\": \"SIGNUP\"," +
+                "\"checkSessionKey\": \"unique_key\"," +
+                "\"activityData\": [" +
+                "{" +
+                "\"kvpKey\": \"some.key\"," +
+                "\"kvpValue\": \"10\"," +
+                "\"kvpType\": \"general.float\"" +
+                "}" +
+                "]" +
+                "}" +
+                "]";
+        MvcResult result = mvc.perform(MockMvcRequestBuilders.post("/isgood")
+                .content(body)
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().is2xxSuccessful())
+                .andReturn();
+
+        MvcResult result1 = mvc.perform(MockMvcRequestBuilders.post("/isgood")
+                .content(body)
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isInternalServerError())
+                .andReturn();
+
+        String resultString = result1.getResponse().getContentAsString();
+        assertNotNull(resultString);
+        assertTrue(resultString.contains("\"code\":0"));
+        assertTrue(resultString.contains("Duplicate"));
+    }
+
+    @Test
+    public void testServiceActivityDataDupeKeys() throws Exception {
+        String body = " [ " +
+                "{" +
+                "\"checkType\": \"DEVICE\"," +
+                "\"activityType\": \"SIGNUP\"," +
+                "\"checkSessionKey\": \"abc\"," +
+                "\"activityData\": [" +
+                "{" +
+                "\"kvpKey\": \"some.dupe.key\"," +
+                "\"kvpValue\": \"10\"," +
+                "\"kvpType\": \"general.float\"" +
+                "}," +
+                "{" +
+                "\"kvpKey\": \"some.dupe.key\"," +
+                "\"kvpValue\": \"10\"," +
+                "\"kvpType\": \"general.float\"" +
+                "}" +
+                "]" +
+                "}" +
+                "]";
+        MvcResult result = mvc.perform(MockMvcRequestBuilders.post("/isgood")
+                .content(body)
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isInternalServerError())
+                .andReturn();
+
+        String resultString = result.getResponse().getContentAsString();
+        assertNotNull(resultString);
+        assertTrue(resultString.contains("\"code\":0"));
+        assertTrue(resultString.contains("Duplicate keys in the request payload"));
+    }
+
+    @Test
+    public void testServiceActivityDataIncompatibleTypes() throws Exception {
+        String body = " [ " +
+                "{" +
+                "\"checkType\": \"DEVICE\"," +
+                "\"activityType\": \"SIGNUP\"," +
+                "\"checkSessionKey\": \"abc\"," +
+                "\"activityData\": [" +
+                "{" +
+                "\"kvpKey\": \"some.key\"," +
+                "\"kvpValue\": \"10\"," +
+                "\"kvpType\": \"general.bool\"" +
+                "}" +
+                "]" +
+                "}" +
+                "]";
+        MvcResult result = mvc.perform(MockMvcRequestBuilders.post("/isgood")
+                .content(body)
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isInternalServerError())
+                .andReturn();
+
+        String resultString = result.getResponse().getContentAsString();
+        assertNotNull(resultString);
+        assertTrue(resultString.contains("\"code\":0"));
+        assertTrue(resultString.contains("kvpValue-kvpType not compatible"));
+    }
+
+    @Test
+    public void testServiceMalformedBody() throws Exception {
+        String body = " [ " +
+                "{" +
+                "\"checkType\": \"DEVICE\"," +
+                "\"activityType\": \"SIGNUP\"," +
+                "\"checkSessionKey\": \"abc\"" +
+                "\"activityData\": [" +
+                "{,," +
+                "\"kvpKey\": \"some.key\"," +
+                "\"kvpValue\": \"10\"," +
+                "\"kvpType\": \"general.bool\"" +
+                "}" +
+                "]" +
+                "}" +
+                "]";
+        MvcResult result = mvc.perform(MockMvcRequestBuilders.post("/isgood")
+                .content(body)
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andReturn();
+    }
+
+}
