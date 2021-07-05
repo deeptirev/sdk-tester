@@ -18,7 +18,7 @@ public class ServiceValidationController {
     ServiceValidationService validateService;
 
     @PostMapping("/isgood")
-    public PuppyObject testService(@RequestBody List<DeviceCheckDetailsObject> deviceCheckObjects) {
+    public PuppyObject validateService(@RequestBody List<DeviceCheckDetailsObject> deviceCheckObjects) {
         return validateService.validate(deviceCheckObjects);
     }
 }

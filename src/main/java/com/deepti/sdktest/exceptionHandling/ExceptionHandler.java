@@ -9,34 +9,13 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 
 @ControllerAdvice
 public class ExceptionHandler {
-
-    @org.springframework.web.bind.annotation.ExceptionHandler
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    @ResponseBody
-    ErrorObject showCustomMessage(Exception e) {
-        ErrorObject error = new ErrorObject();
-        error.setMessage("Internal Server Error");
-        error.setCode(0);
-        return error;
-    }
-
-    @org.springframework.web.bind.annotation.ExceptionHandler(ApplicationException.class)
+    @org.springframework.web.bind.annotation.ExceptionHandler(ServiceValidationException.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     @ResponseBody
-    ErrorObject duplicateError(Exception e) {
+    ErrorObject applicationError(Exception e) {
         ErrorObject errorObject = new ErrorObject();
         errorObject.setMessage(e.getMessage());
         errorObject.setCode(0);
         return errorObject;
-    }
-
-    @org.springframework.web.bind.annotation.ExceptionHandler
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    @ResponseBody
-    ErrorObject showCustomMessage(HttpMessageNotReadableException e) {
-        ErrorObject error = new ErrorObject();
-        error.setMessage(e.getCause().getMessage());
-        error.setCode(0);
-        return error;
     }
 }
